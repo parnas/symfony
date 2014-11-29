@@ -170,6 +170,14 @@ class Session implements SessionInterface, \IteratorAggregate, \Countable
     /**
      * {@inheritdoc}
      */
+    public function destroy()
+    {
+        return $this->storage->destroy();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function migrate($destroy = false, $lifetime = null)
     {
         return $this->storage->regenerate($destroy, $lifetime);

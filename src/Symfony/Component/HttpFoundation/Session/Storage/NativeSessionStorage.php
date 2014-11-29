@@ -212,6 +212,34 @@ class NativeSessionStorage implements SessionStorageInterface
     /**
      * {@inheritdoc}
      */
+    public function destroy()
+    {
+        $this->clean();
+
+        if (ini_get("session.use_cookies")) {
+
+            if (headers_sent($file, $line)) {
+                throw new \RuntimeException(sprintf('Failed to destroy the session because headers have already been sent by "%s" at line %d.', $file, $line));
+            }
+
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+
+        $ret = session_destroy();
+
+        $this->closed = true;
+        $this->started = false;
+
+        return $ret;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function save()
     {
         session_write_close();
@@ -230,13 +258,7 @@ class NativeSessionStorage implements SessionStorageInterface
      */
     public function clear()
     {
-        // clear out the bags
-        foreach ($this->bags as $bag) {
-            $bag->clear();
-        }
-
-        // clear out the session
-        $_SESSION = array();
+        $this->clean();
 
         // reconnect the bags to the session
         $this->loadSession();
@@ -385,6 +407,20 @@ class NativeSessionStorage implements SessionStorageInterface
                 );
             }
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function clean()
+    {
+        // clear out the bags
+        foreach ($this->bags as $bag) {
+            $bag->clear();
+        }
+
+        // clear out the session
+        $_SESSION = array();
     }
 
     /**
